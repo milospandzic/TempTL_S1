@@ -22,7 +22,7 @@ from datetime import datetime
 from itertools import product
 import time
 
-from breizhcrops import LSTM, TransformerModel
+from breizhcrops import TransformerModel
 
 
 def set_seed(x=42): 

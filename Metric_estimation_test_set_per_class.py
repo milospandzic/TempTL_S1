@@ -23,7 +23,6 @@ from itertools import product
 data = pd.read_csv('SAR_50points_random/50random-dataset-csv.csv')
 np.unique(data['class'])
 
-
 data = data[data['class'].isin([0,1,2,3,4,5,6,7,13])]
 data.loc[data['class']==13,'class'] = 8
 
@@ -33,16 +32,6 @@ dates = np.array([datetime.strptime(d[:-2], '%Y%m%d') for d in dates[:-1]])
 best_model_rf_2021 = find_best_rf2('results/hypp_opt_RF_2021_with_percentage.csv')
 
 best_model_cnn = find_best_cnn('results/hypp_opt_CNN_macro.csv')
-
-print(best_model_rf_2021)
-print('---------------------------------')
-print('---------------------------------')
-print('---------------------------------')
-print(best_model_cnn)
-print('---------------------------------')
-print('---------------------------------')
-print('---------------------------------')
-
 
 def initial3(data_new, best_model_cnn, best_model_rf_2021, res, df_res, average_type, iteration, month, points_of_interest):
 

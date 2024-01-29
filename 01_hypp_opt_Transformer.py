@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[9]:
-
-
-# get_ipython().run_line_magic('matplotlib', 'inline')
-# get_ipython().run_line_magic('reload_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
-
-
-# In[10]:
 
 
 import numpy as np
@@ -36,10 +27,6 @@ import time
 
 from breizhcrops import TransformerModel
 
-
-# In[11]:
-
-
 def set_seed(x=42): 
     random.seed(x)
     np.random.seed(x)
@@ -49,7 +36,6 @@ def set_seed(x=42):
     if torch.cuda.is_available(): torch.cuda.manual_seed_all(x)
 
 
-# In[17]:
 def create_transformer_learner(data, d_model, n_head, n_layers, d_inner, drop_prob, model = None):
     
     model = TransformerModel(input_dim=105, num_classes=9, d_model=d_model, n_head=n_head, n_layers=n_layers, d_inner=d_inner, activation="relu", dropout=drop_prob)
@@ -101,16 +87,8 @@ def train_model(data, params, year):
     
     return res, val_loss
 
-
-# In[18]:
-
-
 data = pd.read_csv('SAR_50points_random/50random-dataset-csv.csv')
 np.unique(data['class'])
-
-
-# In[19]:
-
 
 data = data[data['class'].isin([0,1,2,3,4,5,6,7,13])]
 data.loc[data['class']==13,'class'] = 8
@@ -125,7 +103,6 @@ data_new['class'] = data['class']
 data_new.head()
 
 
-
 # For Transformemr
 d_model=[32, 64, 128, 256]
 n_head=[1, 2]
@@ -136,12 +113,9 @@ percentage = [5, 10, 15, 20, 25, 30]
 params = list(product(d_model, n_head, n_layers, d_inner, drop_prob, percentage))
 
 
-
-
 df_res = pd.DataFrame()
 month = [('September',105)]
 
-# for y in np.unique(data_new.year)[:-1]:
 for y in np.unique(data_new.year)[4:]:
     for m in month:
         for p in params:
@@ -161,15 +135,13 @@ for y in np.unique(data_new.year)[4:]:
             X_train, X_val, Y_train, Y_val = train_test_split(X_prim, Y_prim, stratify=Y_prim, test_size=0.25, random_state=42)
 
             """
-            Dodatni deo
+            Increments_start
             """
-            if (p[5]!=30): # Da ne bi imao gresku kad zadas test_size=0 kod split-a.
-                # Za train uzimas 1/6 od onih 30% da bi dobio 5% od celog skupa (primera radi). I menjas borjilac u test_size i naziv fajla.
-                # Ovde vodis racuna i o broju blokova!!!
+            if (p[5]!=30):
                 X_trainHELP, X_valHELP, Y_trainHELP, Y_valHELP = train_test_split(X_train, Y_train, stratify=Y_train, test_size=(1-p[5]/30), random_state=42)
                 X_train, Y_train = X_trainHELP, Y_trainHELP
             """
-            Kraj dodatnog dela
+            Increments_end
             """
 
             train_sample_idx = np.hstack([valid_data.loc[valid_data['ID_p']==t,:].index for t in  X_train.index])
@@ -184,17 +156,6 @@ for y in np.unique(data_new.year)[4:]:
 
             X_val = torch.Tensor(valid_data_validate.iloc[:,3:-1].to_numpy())
             Y_val = torch.Tensor(valid_data_validate.iloc[:,-1].to_numpy())
-
-            print("TRENING")
-            print(np.unique(valid_data_learn.ID_p))
-            print(len(np.unique(valid_data_learn.ID_p)))
-            print("VALIDACIJA")
-            print(np.unique(valid_data_validate.ID_p))
-            print(len(np.unique(valid_data_validate.ID_p)))
-            print("TESTING")
-            print(np.unique(X_test.index))
-            print(len(np.unique(X_test.index)))
-
             
             X_train = X_train.reshape(-1, 1, m[1]) 
             X_val = X_val.reshape(-1, 1, m[1])

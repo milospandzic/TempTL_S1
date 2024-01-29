@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,9 +25,6 @@ import time
 from breizhcrops import LSTM, TransformerModel
 
 
-# In[ ]:
-
-
 def set_seed(x=42): 
     random.seed(x)
     np.random.seed(x)
@@ -38,28 +32,6 @@ def set_seed(x=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     if torch.cuda.is_available(): torch.cuda.manual_seed_all(x)
-
-
-# In[ ]:
-
-
-def create_lstm_learner(data, hidden_dims, num_layers, drop_prob, bidirectional, model = None):
-    
-    model = LSTM(input_dim=105, num_classes=9, hidden_dims=hidden_dims, num_layers=num_layers, dropout=drop_prob, bidirectional=bidirectional, use_layernorm=True)
-
-    average_type = 'macro'
-    learn = Learner(data, model, loss_func = nn.CrossEntropyLoss(), metrics=[accuracy,FBeta(average=average_type, beta=1),Precision(average=average_type), Recall(average=average_type)],callback_fns=[ShowGraph,partial(EarlyStoppingCallback, monitor='valid_loss', min_delta=0.01, patience=15)])
-          
-    print('Number of parameters: ',sum(p.numel() for p in model.parameters()))
-    print('Cuda: ', next(learn.model.parameters()).is_cuda)
-    print('Cuda: ', next(learn.model.parameters()).device)
-
-
-          
-    return learn
-
-
-# In[ ]:
 
 
 def create_transformer_learner(data, d_model, n_head, n_layers, d_inner, drop_prob, model = None):
@@ -74,34 +46,21 @@ def create_transformer_learner(data, d_model, n_head, n_layers, d_inner, drop_pr
     return learn
 
 
-# In[ ]:
-
-
 def train_model(data, params, year):
     
     set_seed()
     learn = create_transformer_learner(data, d_model=params[0], n_head=params[1], n_layers=params[2], d_inner=params[3], drop_prob=params[4])
-    # learn = create_lstm_learner(data, hidden_dims=params[0], num_layers=params[1], drop_prob=params[2], bidirectional=params[3])
     learn.lr_find(start_lr=1e-10, end_lr=1e-1)
     learn.model.cuda(0)
 
-
-    # learn.model.cpu()
-
-#     learn.recorder.plot()
     print(learn.model)
     print(summary(learn.model,learn.data.train_ds[:][0].shape[1:]))
     
     start_time = time.time()
-    # learn.fit_one_cycle(20, max_lr=9.88e-5, wd=5.26e-7, callbacks=[SaveModelCallback(learn, every='improvement', monitor='valid_loss', name= 'model')])
     learn.fit_one_cycle(20, max_lr=1.31e-4, wd=5.52e-8, callbacks=[SaveModelCallback(learn, every='improvement', monitor='valid_loss', name= 'model')])
     time_comp = time.time()-start_time
     learn.save(f'Transformer-model-year-{year}-d_model-{params[0]}-n_head-{params[1]}-n_layers-{params[2]}-d_inner-{params[3]}-drop_prob-{params[4]}')
-    # learn.save(f'LSTM-model-year-{year}-hidden_dims-{params[0]}-num_layers-{params[1]}-drop_prob-{params[2]}-bidirectional-{params[3]}')
-    
-# #     learn.recorder.plot_losses();
-# #     plt.savefig(f'results/losses-year-{year}-nfilters-{nfilters}-drop_prob-{drop_prob}-kernel_size-{kernel_size}.png', dpi=300)
-# #     plt.close()
+
         
     learner_metrics = learn.recorder.metrics_names
     valid_classes = np.argmax(learn.get_preds()[0].numpy(),axis=1)
@@ -118,24 +77,13 @@ def train_model(data, params, year):
             res[metric] = recall_score(learn.data.valid_ds[:][1],valid_classes,average = 'macro')
     
     res['Time complexity'] = time_comp
-
-# #     plot_confusion_matrix(learn.data.valid_ds[:][1],valid_classes,year,np.unique(valid_classes),title=res['accuracy'],ylabel='True label',xlabel='Predicted label',normalize=False,cmap=plt.cm.Blues)
-# #     plot_confusion_matrix(learn.data.valid_ds[:][1],valid_classes,year,np.unique(valid_classes),title=res['accuracy'],ylabel='True label',xlabel='Predicted label',normalize=True,cmap=plt.cm.Blues)
-# #     plt.savefig(f'results/conf-year-{year}-nfilters-{nfilters}-drop_prob-{drop_prob}-kernel_size-{kernel_size}.png', dpi=300)
-# #     plt.close()
     
     val_loss = learn.validate()[0]
     
     return res, val_loss
 
-
-# In[ ]:
-
 data = pd.read_csv('SAR_50points_random/50random-dataset-csv.csv')
 np.unique(data['class'])
-
-
-# In[ ]:
 
 
 data = data[data['class'].isin([0,1,2,3,4,5,6,7,13])]
@@ -157,16 +105,6 @@ n_layers=[4, 5, 6]
 d_inner=[64, 128, 256]
 drop_prob=[0, 0.25]
 params = list(product(d_model, n_head, n_layers, d_inner, drop_prob))
-
-
-# For LSTM
-# bidirectional = [False, True]
-# hidden_dims = [4, 8, 16, 32] 
-# num_layers =[1, 2, 3]
-# drop_probs = [0.25, 0.5, 0.75]
-# params = list(product(hidden_dims, num_layers, drop_probs, bidirectional))
-
-
 
 df_res = pd.DataFrame()
 month = [('September',105)]
@@ -201,4 +139,4 @@ for y in np.unique(data_new.year)[:-1]:
             res['val_loss'] = val_loss 
 
             df_res = df_res.append(pd.DataFrame(res,index = [0]))
-            df_res.to_csv('results/hypp_opt_transformer_macro.csv')
+            df_res.to_csv('results/hypp_opt_transformer_.csv')
